@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>LabGrownBox Deployment Playbook</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.5; margin: 36px; color: #111; }
+    h1,h2,h3 { color: #0d2b6e; margin-top: 24px; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    pre { background: #f6f8fa; border: 1px solid #ddd; padding: 10px; border-radius: 8px; overflow-x: auto; }
+    ul,ol { margin-top: 6px; }
+    .note { background:#eef4ff; border-left:4px solid #0d2b6e; padding:10px 12px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <h1>LabGrownBox Deployment Playbook</h1>
+  <p>This is the exact sequence to take the app from local machine to production.</p>
+
+  <h2>0) Already completed</h2>
+  <ul>
+    <li>Migration status checked; schema up to date.</li>
+    <li><code>npx prisma migrate deploy</code> executed (no pending migrations).</li>
+    <li><code>npm run build</code> executed successfully.</li>
+  </ul>
+
+  <h2>1) Accounts needed (one-time)</h2>
+  <ol>
+    <li>GitHub</li>
+    <li>Vercel</li>
+    <li>Neon or Supabase (Postgres)</li>
+    <li>Google AI Studio (Gemini key)</li>
+    <li>Optional: Google Apps Script account (for Sheets sync)</li>
+  </ol>
+
+  <h2>2) Push code to GitHub</h2>
+  <pre><code>git status
+git add .
+git commit -m "prepare production-ready deployment"
+git remote add origin &lt;your-github-repo-url&gt;   # only if not set
+git push -u origin main</code></pre>
+
+  <h2>3) Create production Postgres</h2>
+  <p>Create DB in Neon/Supabase and copy <code>DATABASE_URL</code>.</p>
+  <pre><code>postgresql://USER:PASSWORD@HOST/DB?sslmode=require</code></pre>
+
+  <h2>4) Connect project in Vercel</h2>
+  <ol>
+    <li>Import GitHub repo in Vercel</li>
+    <li>Framework: Next.js</li>
+    <li>Add env vars:
+      <ul>
+        <li><code>DATABASE_URL</code></li>
+        <li><code>GEMINI_API_KEY</code></li>
+        <li>Optional <code>GEMINI_MODEL</code></li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2>5) Apply production migrations</h2>
+  <pre><code>DATABASE_URL="&lt;your-prod-postgres-url&gt;" npx prisma migrate deploy</code></pre>
+
+  <h2>6) First production validation</h2>
+  <ol>
+    <li>Open <code>/</code> and verify orders UI loads</li>
+    <li>Open <code>/settings</code></li>
+    <li>Test Gemini key in settings</li>
+    <li>Scan one invoice</li>
+    <li>Create/edit/delete an order</li>
+    <li>Check dashboard and statements</li>
+  </ol>
+
+  <h2>7) Optional Sheets sync</h2>
+  <ol>
+    <li>Create Apps Script Web App URL</li>
+    <li>Set script URL + shared secret in app settings</li>
+    <li>Save one order and verify sheet update</li>
+  </ol>
+
+  <h2>8) Storage warning</h2>
+  <div class="note">
+    Current app can use local/server filesystem for some assets. This is not durable on serverless hosting. For robust production, move uploads to cloud object storage (S3/Supabase Storage/Vercel Blob).
+  </div>
+
+  <h2>9) Daily update flow</h2>
+  <pre><code>git add .
+git commit -m "your change"
+git push</code></pre>
+
+  <p>Vercel auto-redeploys from GitHub.</p>
+</body>
+</html>
